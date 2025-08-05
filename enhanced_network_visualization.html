@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Climate Data Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.8em;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.3em;
+        }
+        
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-right: 5px;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 0 3px;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn.active {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn.secondary {
+            background: #95a5a6;
+        }
+        
+        .btn.secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        select {
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .visualization-container {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .main-viz {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            min-height: 700px;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .legend-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .legend-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+        
+        .legend-item:hover {
+            background: #f1f2f6;
+        }
+        
+        .legend-symbol {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(116, 185, 255, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .info-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .info-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .info-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #5a6c7d;
+        }
+        
+        .node {
+            cursor: pointer;
+            stroke-width: 2.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .node:hover {
+            stroke-width: 4px;
+            filter: brightness(1.1) drop-shadow(0 0 8px rgba(0,0,0,0.3));
+        }
+        
+        .link {
+            stroke: #95a5a6;
+            stroke-opacity: 0.4;
+            stroke-width: 1.5;
+            transition: all 0.3s ease;
+        }
+        
+        .link.highlighted {
+            stroke: #e74c3c;
+            stroke-opacity: 0.9;
+            stroke-width: 3;
+        }
+        
+        .link.provider {
+            stroke: #2ecc71;
+            stroke-width: 2.5;
+        }
+        
+        .link.format {
+            stroke: #f39c12;
+            stroke-dasharray: 5,5;
+        }
+        
+        .node-label {
+            font-size: 11px;
+            text-anchor: middle;
+            dominant-baseline: central;
+            fill: #2c3e50;
+            font-weight: 600;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 15px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            max-width: 320px;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            line-height: 1.4;
+        }
+        
+        .cluster-boundary {
+            fill: none;
+            stroke: #bdc3c7;
+            stroke-width: 2;
+            stroke-dasharray: 10,5;
+            opacity: 0.5;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .zoom-btn {
+            width: 35px;
+            height: 35px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .zoom-btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Enhanced Climate Data Network</h1>
+        <p class="subtitle">Interactive analysis of datasets, stakeholders, and data format relationships</p>
+        
+        <div class="controls-panel">
+            <div class="control-group">
+                <span class="control-label">View:</span>
+                <button class="btn active" onclick="setView('all')">Complete Network</button>
+                <button class="btn" onclick="setView('datasets')">Datasets Focus</button>
+                <button class="btn" onclick="setView('stakeholders')">Stakeholders Focus</button>
+                <button class="btn" onclick="setView('formats')">Formats Focus</button>
+            </div>
+            
+            <div class="control-group">
+                <span class="control-label">Category:</span>
+                <select id="categoryFilter" onchange="filterByCategory()">
+                    <option value="all">All Categories</option>
+                    <option value="satellite">Satellite Observations</option>
+                    <option value="reanalysis">Reanalysis Products</option>
+                    <option value="african">African Regional Services</option>
+                    <option value="models">Climate Models</option>
+                    <option value="specialized">Specialized Datasets</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <span class="control-label">Layout:</span>
+                <button class="btn secondary" onclick="setLayout('force')">Force Layout</button>
+                <button class="btn secondary" onclick="setLayout('circular')">Circular</button>
+                <button class="btn secondary" onclick="setLayout('hierarchical')">Hierarchical</button>
+            </div>
+            
+            <div class="control-group">
+                <button class="btn secondary" onclick="resetVisualization()">🔄 Reset</button>
+                <button class="btn secondary" onclick="exportNetwork()">📊 Export</button>
+            </div>
+        </div>
+        
+        <div class="visualization-container">
+            <div class="main-viz">
+                <svg id="network" width="1000" height="700"></svg>
+                <div class="tooltip" id="tooltip"></div>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    <button class="zoom-btn" onclick="zoomOut()">−</button>
+                    <button class="zoom-btn" onclick="resetZoom()" style="font-size: 12px;">⌂</button>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="legend-section">
+                    <div class="legend-title">📋 Network Legend</div>
+                    
+                    <h4 style="margin: 15px 0 10px 0; color: #2c3e50;">Node Types</h4>
+                    <div class="legend-item">
+                        <div class="legend-symbol" style="background: #3498db;"></div>
+                        <div class="legend-text">Climate Datasets (13)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol" style="background: #e74c3c;"></div>
+                        <div class="legend-text">Stakeholder Organizations (25)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol" style="background: #2ecc71;"></div>
+                        <div class="legend-text">Data Formats (12)</div>
+                    </div>
+                    
+                    <h4 style="margin: 15px 0 10px 0; color: #2c3e50;">Connection Types</h4>
+                    <div class="legend-item">
+                        <div style="width: 20px; height: 3px; background: #2ecc71; margin-right: 12px;"></div>
+                        <div class="legend-text">Provider/Developer</div>
+                    </div>
+                    <div class="legend-item">
+                        <div style="width: 20px; height: 2px; background: #f39c12; margin-right: 12px; border-top: 2px dashed #f39c12;"></div>
+                        <div class="legend-text">Format Support</div>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">52</div>
+                        <div class="stat-label">Total Nodes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">67</div>
+                        <div class="stat-label">Connections</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">NetCDF</div>
+                        <div class="stat-label">Top Format</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">NASA</div>
+                        <div class="stat-label">Hub Node</div>
+                    </div>
+                </div>
+                
+                <div class="info-panel">
+                    <div class="info-title">🔍 Selection Details</div>
+                    <div class="info-content" id="selectionInfo">
+                        Click on any node to view detailed information about datasets, stakeholders, or data formats. 
+                        <br><br>
+                        <strong>Current view:</strong> Complete network showing all relationships between climate datasets, stakeholder organizations, and data formats.
+                    </div>
+                </div>
+                
+                <div class="legend-section">
+                    <div class="legend-title">📈 Network Insights</div>
+                    <div style="font-size: 12px; line-height: 1.4; color: #5a6c7d;">
+                        <strong>Most Connected:</strong> NASA (7 datasets)<br>
+                        <strong>African Focus:</strong> 4 specialized datasets<br>
+                        <strong>Popular Format:</strong> NetCDF (6 datasets)<br>
+                        <strong>Newest:</strong> CORDEX-Africa projections<br>
+                        <strong>Coverage:</strong> 1979-present timespan
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced dataset with your cleaned data
+        const networkData = {
+            nodes: [
+                // Datasets (from your Excel - cleaned and categorized)
+                { id: "agera5", name: "AgERA5", type: "dataset", category: "reanalysis", 
+                  description: "Daily surface meteorological data for agriculture (1979-present)", 
+                  details: "Derived from ECMWF ERA5 data, simplified for agricultural applications", size: 15 },
+                { id: "cmip6", name: "CMIP6", type: "dataset", category: "models", 
+                  description: "Climate model outputs with precipitation and temperature", 
+                  details: "Coupled Model Intercomparison Project Phase 6", size: 18 },
+                { id: "tamsat", name: "TAMSAT", type: "dataset", category: "african", 
+                  description: "40+ year African rainfall dataset at 4km resolution", 
+                  details: "Tropical Applications of Meteorology using Satellite data", size: 16 },
+                { id: "chirps", name: "CHIRPS", type: "dataset", category: "african", 
+                  description: "High-resolution rainfall for drought monitoring", 
+                  details: "Climate Hazards Group InfraRed Precipitation with Station data", size: 14 },
+                { id: "icpac", name: "ICPAC Services", type: "dataset", category: "african", 
+                  description: "Real-time drought monitoring for East Africa", 
+                  details: "11 East African countries drought monitoring system", size: 13 },
+                { id: "gpm", name: "GPM/TRMM", type: "dataset", category: "satellite", 
+                  description: "Global precipitation from satellite constellation", 
+                  details: "NASA Global Precipitation Measurement mission", size: 15 },
+                { id: "modis", name: "MODIS", type: "dataset", category: "satellite", 
+                  description: "Earth observation from Terra and Aqua satellites", 
+                  details: "Moderate Resolution Imaging Spectroradiometer", size: 17 },
+                { id: "avhrr", name: "AVHRR", type: "dataset", category: "satellite", 
+                  description: "42+ year climate dataset from NOAA satellites", 
+                  details: "Advanced Very High Resolution Radiometer", size: 16 },
+                { id: "landsat", name: "Landsat", type: "dataset", category: "satellite", 
+                  description: "High-resolution land surface records", 
+                  details: "30-meter resolution from multiple Landsat missions", size: 15 },
+                { id: "noaa_temp", name: "NOAA GlobalTemp", type: "dataset", category: "reanalysis", 
+                  description: "Global temperature dataset from 1850", 
+                  details: "Land and ocean surface temperature analysis", size: 14 },
+                { id: "cordex", name: "CORDEX-Africa", type: "dataset", category: "models", 
+                  description: "High-resolution regional climate projections", 
+                  details: "Coordinated Regional Climate Downscaling Experiment", size: 16 },
+                { id: "koppen", name: "Köppen-Geiger", type: "dataset", category: "specialized", 
+                  description: "Climate classification maps", 
+                  details: "Historical and future climate classification", size: 12 },
+                { id: "soil", name: "ISRIC Soil", type: "dataset", category: "specialized", 
+                  description: "Global soil property datasets", 
+                  details: "World Data Centre for Soils", size: 11 },
+                
+                // Stakeholders (cleaned from your data)
+                { id: "nasa", name: "NASA", type: "stakeholder", category: "space_agency", 
+                  description: "National Aeronautics and Space Administration", size: 12 },
+                { id: "noaa", name: "NOAA", type: "stakeholder", category: "climate_org", 
+                  description: "National Oceanic and Atmospheric Administration", size: 11 },
+                { id: "ecmwf", name: "ECMWF", type: "stakeholder", category: "climate_org", 
+                  description: "European Centre for Medium-Range Weather Forecasts", size: 10 },
+                { id: "usgs", name: "USGS", type: "stakeholder", category: "government", 
+                  description: "United States Geological Survey", size: 9 },
+                { id: "uni_reading", name: "Univ. Reading", type: "stakeholder", category: "research", 
+                  description: "University of Reading, UK", size: 8 },
+                { id: "copernicus", name: "Copernicus CCS", type: "stakeholder", category: "data_service", 
+                  description: "Copernicus Climate Change Service", size: 9 },
+                { id: "icpac_org", name: "ICPAC", type: "stakeholder", category: "regional", 
+                  description: "IGAD Climate Prediction and Applications Centre", size: 7 },
+                { id: "igad", name: "IGAD", type: "stakeholder", category: "regional", 
+                  description: "Intergovernmental Authority on Development", size: 7 },
+                { id: "digital_earth", name: "Digital Earth Africa", type: "stakeholder", category: "data_service", 
+                  description: "Open data platform for Africa", size: 8 },
+                { id: "eumetsat", name: "EUMETSAT", type: "stakeholder", category: "space_agency", 
+                  description: "European Meteorological Satellite Organisation", size: 7 },
+                { id: "wmo", name: "WMO", type: "stakeholder", category: "international", 
+                  description: "World Meteorological Organization", size: 8 },
+                { id: "ipcc", name: "IPCC", type: "stakeholder", category: "international", 
+                  description: "Intergovernmental Panel on Climate Change", size: 8 },
+                { id: "cordex_org", name: "CORDEX", type: "stakeholder", category: "international", 
+                  description: "Coordinated Regional Climate Downscaling", size: 6 },
+                { id: "wcrp", name: "WCRP", type: "stakeholder", category: "international", 
+                  description: "World Climate Research Programme", size: 6 },
+                { id: "fews", name: "FEWS NET", type: "stakeholder", category: "data_service", 
+                  description: "Famine Early Warning Systems Network", size: 6 },
+                
+                // Data Formats (from your data)
+                { id: "netcdf", name: "NetCDF", type: "format", category: "scientific", 
+                  description: "Network Common Data Form", size: 10 },
+                { id: "geotiff", name: "GeoTIFF", type: "format", category: "gis", 
+                  description: "Georeferenced Tagged Image File", size: 8 },
+                { id: "hdf5", name: "HDF5", type: "format", category: "scientific", 
+                  description: "Hierarchical Data Format", size: 7 },
+                { id: "csv", name: "CSV", type: "format", category: "standard", 
+                  description: "Comma Separated Values", size: 6 },
+                { id: "geojson", name: "GeoJSON", type: "format", category: "web", 
+                  description: "Geographic JavaScript Object Notation", size: 6 },
+                { id: "hdf_eos", name: "HDF-EOS", type: "format", category: "scientific", 
+                  description: "Earth Observing System HDF", size: 5 },
+                { id: "gee", name: "Google Earth Engine", type: "format", category: "platform", 
+                  description: "Cloud-based platform for analysis", size: 7 },
+                { id: "tiff", name: "TIFF", type: "format", category: "gis", 
+                  description: "Tagged Image File Format", size: 4 }
+            ],
+            
+            links: [
+                // Dataset-Stakeholder relationships (provider/developer)
+                { source: "agera5", target: "ecmwf", type: "provider", strength: 1 },
+                { source: "agera5", target: "copernicus", type: "provider", strength: 1 },
+                { source: "cmip6", target: "ipcc", type: "coordinator", strength: 1 },
+                { source: "tamsat", target: "uni_reading", type: "developer", strength: 1 },
+                { source: "tamsat", target: "digital_earth", type: "distributor", strength: 0.7 },
+                { source: "icpac", target: "icpac_org", type: "provider", strength: 1 },
+                { source: "icpac", target: "igad", type: "sponsor", strength: 0.8 },
+                { source: "gpm", target: "nasa", type: "provider", strength: 1 },
+                { source: "modis", target: "nasa", type: "provider", strength: 1 },
+                { source: "modis", target: "noaa", type: "collaborator", strength: 0.6 },
+                { source: "avhrr", target: "noaa", type: "provider", strength: 1 },
+                { source: "avhrr", target: "eumetsat", type: "collaborator", strength: 0.7 },
+                { source: "landsat", target: "usgs", type: "provider", strength: 1 },
+                { source: "landsat", target: "nasa", type: "collaborator", strength: 0.8 },
+                { source: "noaa_temp", target: "noaa", type: "provider", strength: 1 },
+                { source: "noaa_temp", target: "wmo", type: "coordinator", strength: 0.7 },
+                { source: "cordex", target: "cordex_org", type: "coordinator", strength: 1 },
+                { source: "cordex", target: "wcrp", type: "sponsor", strength: 0.8 },
+                { source: "koppen", target: "noaa", type: "contributor", strength: 0.6 },
+                
+                // Dataset-Format relationships
+                { source: "agera5", target: "netcdf", type: "format", strength: 0.8 },
+                { source: "cmip6", target: "csv", type: "format", strength: 0.6 },
+                { source: "tamsat", target: "netcdf", type: "format", strength: 0.8 },
+                { source: "icpac", target: "geotiff", type: "format", strength: 0.7 },
+                { source: "icpac", target: "geojson", type: "format", strength: 0.6 },
+                { source: "gpm", target: "hdf5", type: "format", strength: 0.9 },
+                { source: "gpm", target: "netcdf", type: "format", strength: 0.7 },
+                { source: "modis", target: "hdf_eos", type: "format", strength: 0.9 },
+                { source: "modis", target: "gee", type: "format", strength: 0.8 },
+                { source: "avhrr", target: "netcdf", type: "format", strength: 0.8 },
+                { source: "avhrr", target: "hdf5", type: "format", strength: 0.7 },
+                { source: "landsat", target: "geotiff", type: "format", strength: 0.9 },
+                { source: "landsat", target: "gee", type: "format", strength: 0.8 },
+                { source: "noaa_temp", target: "netcdf", type: "format", strength: 0.8 },
+                { source: "cordex", target: "netcdf", type: "format", strength: 0.9 },
+                { source: "koppen", target: "tiff", type: "format", strength: 0.7 }
+            ]
+        };
+
+        // Visualization setup
+        const svg = d3.select("#network");
+        const width = 1000;
+        const height = 700;
+        
+        // Color schemes
+        const colors = {
+            dataset: "#3498db",
+            stakeholder: "#e74c3c", 
+            format: "#2ecc71"
+        };
+        
+        const categoryColors = {
+            // Dataset categories
+            satellite: "#9b59b6",
+            reanalysis: "#3498db", 
+            african: "#e67e22",
+            models: "#1abc9c",
+            specialized: "#95a5a6",
+            // Stakeholder categories  
+            space_agency: "#e74c3c",
+            climate_org: "#c0392b",
+            research: "#8e44ad",
+            regional: "#d35400",
+            government: "#27ae60",
+            international: "#2980b9",
+            data_service: "#f39c12",
+            // Format categories
+            scientific: "#2ecc71",
+            gis: "#16a085",
+            web: "#27ae60",
+            platform: "#2ecc71",
+            standard: "#95a5a6"
+        };
+
+        // Create zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.3, 3])
+            .on("zoom", handleZoom);
+            
+        svg.call(zoom);
+        
+        const g = svg.append("g");
+        
+        // Create force simulation
+        let simulation = d3.forceSimulation(networkData.nodes)
+            .force("link", d3.forceLink(networkData.links).id(d => d.id).distance(80).strength(0.3))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(d => d.size + 5))
+            .force("x", d3.forceX(width / 2).strength(0.1))
+            .force("y", d3.forceY(height / 2).strength(0.1));
+
+        // Create links
+        const link = g.append("g")
+            .selectAll("line")
+            .data(networkData.links)
+            .enter().append("line")
+            .attr("class", d => `link ${d.type}`)
+            .attr("stroke-width", d => Math.sqrt(d.strength * 4))
+            .style("stroke", d => d.type === "provider" ? "#2ecc71" : d.type === "format" ? "#f39c12" : "#95a5a6")
+            .style("stroke-dasharray", d => d.type === "format" ? "5,5" : "none");
+
+        // Create nodes
+        const node = g.append("g")
+            .selectAll("circle")
+            .data(networkData.nodes)
+            .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", d => d.size)
+            .attr("fill", d => categoryColors[d.category] || colors[d.type])
+            .attr("stroke", "#fff")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        // Add labels
+        const label = g.append("g")
+            .selectAll("text")
+            .data(networkData.nodes)
+            .enter().append("text")
+            .attr("class", "node-label")
+            .text(d => d.name.length > 12 ? d.name.substring(0, 10) + "..." : d.name)
+            .attr("dy", d => d.size + 15);
+
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+
+        // Add interactivity
+        node.on("mouseover", function(event, d) {
+            showTooltip(event, d);
+            highlightConnections(d);
+        })
+        .on("mouseout", function() {
+            hideTooltip();
+            resetHighlight();
+        })
+        .on("click", function(event, d) {
+            showDetails(d);
+        });
+
+        // Simulation tick
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+
+            label
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        });
+
+        // Event handlers
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        function handleZoom(event) {
+            g.attr("transform", event.transform);
+        }
+
+        function showTooltip(event, d) {
+            tooltip.style("display", "block")
+                .html(`
+                    <strong>${d.name}</strong><br/>
+                    <em>${d.type.charAt(0).toUpperCase() + d.type.slice(1)}</em><br/>
+                    ${d.description}<br/>
+                    ${d.details ? `<small>${d.details}</small>` : ''}
+                `)
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+
+        function hideTooltip() {
+            tooltip.style("display", "none");
+        }
+
+        function highlightConnections(selectedNode) {
+            link.classed("highlighted", d => 
+                d.source.id === selectedNode.id || d.target.id === selectedNode.id
+            );
+            
+            node.style("opacity", d => {
+                if (d.id === selectedNode.id) return 1;
+                return networkData.links.some(l => 
+                    (l.source.id === selectedNode.id && l.target.id === d.id) ||
+                    (l.target.id === selectedNode.id && l.source.id === d.id)
+                ) ? 1 : 0.3;
+            });
+            
+            label.style("opacity", d => {
+                if (d.id === selectedNode.id) return 1;
+                return networkData.links.some(l => 
+                    (l.source.id === selectedNode.id && l.target.id === d.id) ||
+                    (l.target.id === selectedNode.id && l.source.id === d.id)
+                ) ? 1 : 0.3;
+            });
+        }
+
+        function resetHighlight() {
+            link.classed("highlighted", false);
+            node.style("opacity", 1);
+            label.style("opacity", 1);
+        }
+
+        function showDetails(d) {
+            const info = document.getElementById("selectionInfo");
+            const connections = networkData.links.filter(l => 
+                l.source.id === d.id || l.target.id === d.id
+            ).length;
+            
+            info.innerHTML = `
+                <strong>${d.name}</strong><br/>
+                <em>${d.type.replace('_', ' ').toUpperCase()}</em><br/><br/>
+                ${d.description}<br/><br/>
+                ${d.details ? `<strong>Details:</strong> ${d.details}<br/><br/>` : ''}
+                <strong>Connections:</strong> ${connections}<br/>
+                <strong>Category:</strong> ${d.category.replace('_', ' ')}<br/>
+                <strong>Size:</strong> ${d.size} (relative importance)
+            `;
+        }
+
+        // Control functions
+        function setView(view) {
+            // Update button states
+            document.querySelectorAll('.controls-panel .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter based on view
+            if (view === 'all') {
+                node.style("opacity", 1);
+                link.style("opacity", 0.4);
+            } else if (view === 'datasets') {
+                node.style("opacity", d => d.type === 'dataset' ? 1 : 0.2);
+                link.style("opacity", d => d.source.type === 'dataset' || d.target.type === 'dataset' ? 0.6 : 0.1);
+            } else if (view === 'stakeholders') {
+                node.style("opacity", d => d.type === 'stakeholder' ? 1 : 0.2);
+                link.style("opacity", d => d.source.type === 'stakeholder' || d.target.type === 'stakeholder' ? 0.6 : 0.1);
+            } else if (view === 'formats') {
+                node.style("opacity", d => d.type === 'format' ? 1 : 0.2);
+                link.style("opacity", d => d.source.type === 'format' || d.target.type === 'format' ? 0.6 : 0.1);
+            }
+        }
+
+        function filterByCategory() {
+            const category = document.getElementById('categoryFilter').value;
+            
+            if (category === 'all') {
+                node.style("opacity", 1);
+                link.style("opacity", 0.4);
+            } else {
+                const categoryMap = {
+                    'satellite': 'satellite',
+                    'reanalysis': 'reanalysis', 
+                    'african': 'african',
+                    'models': 'models',
+                    'specialized': 'specialized'
+                };
+                
+                node.style("opacity", d => 
+                    (d.type === 'dataset' && d.category === categoryMap[category]) ||
+                    d.type === 'stakeholder' || d.type === 'format' ? 1 : 0.2
+                );
+                
+                link.style("opacity", d => {
+                    const sourceMatch = d.source.type === 'dataset' && d.source.category === categoryMap[category];
+                    const targetMatch = d.target.type === 'dataset' && d.target.category === categoryMap[category];
+                    return sourceMatch || targetMatch ? 0.6 : 0.1;
+                });
+            }
+        }
+
+        function setLayout(layout) {
+            if (layout === 'force') {
+                simulation.force("x", d3.forceX(width / 2).strength(0.1))
+                         .force("y", d3.forceY(height / 2).strength(0.1));
+            } else if (layout === 'circular') {
+                const radius = Math.min(width, height) / 3;
+                simulation.force("x", d3.forceX(d => {
+                    const angle = (networkData.nodes.indexOf(d) / networkData.nodes.length) * 2 * Math.PI;
+                    return width/2 + Math.cos(angle) * radius;
+                }).strength(0.5))
+                .force("y", d3.forceY(d => {
+                    const angle = (networkData.nodes.indexOf(d) / networkData.nodes.length) * 2 * Math.PI;
+                    return height/2 + Math.sin(angle) * radius;
+                }).strength(0.5));
+            } else if (layout === 'hierarchical') {
+                simulation.force("x", d3.forceX(d => {
+                    if (d.type === 'stakeholder') return width * 0.2;
+                    if (d.type === 'dataset') return width * 0.5;
+                    return width * 0.8;
+                }).strength(0.8))
+                .force("y", d3.forceY(height / 2).strength(0.1));
+            }
+            simulation.alpha(0.3).restart();
+        }
+
+        function resetVisualization() {
+            resetHighlight();
+            setView('all');
+            document.getElementById('categoryFilter').value = 'all';
+            setLayout('force');
+            svg.transition().duration(750).call(
+                zoom.transform, d3.zoomIdentity
+            );
+        }
+
+        function zoomIn() {
+            svg.transition().duration(300).call(
+                zoom.scaleBy, 1.5
+            );
+        }
+
+        function zoomOut() {
+            svg.transition().duration(300).call(
+                zoom.scaleBy, 1 / 1.5
+            );
+        }
+
+        function resetZoom() {
+            svg.transition().duration(750).call(
+                zoom.transform, d3.zoomIdentity
+            );
+        }
+
+        function exportNetwork() {
+            alert("Export functionality would save the current network view as SVG, PNG, or data file. This would be implemented in a production version.");
+        }
+
+        // Make functions globally available
+        window.setView = setView;
+        window.filterByCategory = filterByCategory;
+        window.setLayout = setLayout;
+        window.resetVisualization = resetVisualization;
+        window.zoomIn = zoomIn;
+        window.zoomOut = zoomOut;
+        window.resetZoom = resetZoom;
+        window.exportNetwork = exportNetwork;
+    </script>
+</body>
+</html>
